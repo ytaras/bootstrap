@@ -26,7 +26,7 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
 
   // The options specified to the provider globally.
   var globalOptions = {};
-  
+
   /**
    * `options({})` allows global configuration of all tooltips in the
    * application.
@@ -84,7 +84,7 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
        */
       function setTriggers ( trigger ) {
         var show, hide;
-       
+
         show = trigger || options.trigger || defaultTriggerShow;
         if ( angular.isDefined ( options.trigger ) ) {
           hide = triggerMap[options.trigger] || show;
@@ -103,13 +103,14 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
 
       var startSym = $interpolate.startSymbol();
       var endSym = $interpolate.endSymbol();
-      var template = 
+      var template =
         '<'+ directiveName +'-popup '+
           'title="'+startSym+'tt_title'+endSym+'" '+
           'content="'+startSym+'tt_content'+endSym+'" '+
           'placement="'+startSym+'tt_placement'+endSym+'" '+
           'animation="tt_animation()" '+
-          'is-open="tt_isOpen"'+
+          'is-open="tt_isOpen" '+
+          'template="{{tt_template}}"'+
           '>'+
         '</'+ directiveName +'-popup>';
 
@@ -134,7 +135,7 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
               hideTooltipBind();
             }
           }
-          
+
           // Show the tooltip with delay if specified, otherwise show it immediately
           function showTooltipBind() {
             if ( scope.tt_popupDelay ) {
@@ -149,7 +150,7 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
               hide();
             });
           }
-          
+
           // Show the tooltip popup element.
           function show() {
             var position,
@@ -167,11 +168,11 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
             if ( transitionTimeout ) {
               $timeout.cancel( transitionTimeout );
             }
-            
+
             // Set the initial positioning.
             tooltip.css({ top: 0, left: 0, display: 'block' });
-            
-            // Now we add it to the DOM because need some info about it. But it's not 
+
+            // Now we add it to the DOM because need some info about it. But it's not
             // visible yet anyway.
             if ( appendToBody ) {
                 $body = $body || $document.find( 'body' );
@@ -186,7 +187,7 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
             // Get the height and width of the tooltip so we can center it.
             ttWidth = tooltip.prop( 'offsetWidth' );
             ttHeight = tooltip.prop( 'offsetHeight' );
-            
+
             // Calculate the tooltip's top and left coordinates to center it with
             // this directive.
             switch ( scope.tt_placement ) {
@@ -228,11 +229,11 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
 
             // Now set the calculated positioning.
             tooltip.css( ttPosition );
-              
+
             // And show the tooltip.
             scope.tt_isOpen = true;
           }
-          
+
           // Hide the tooltip popup element.
           function hide() {
             // First things first: we don't show it anymore.
@@ -240,8 +241,8 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
 
             //if tooltip is going to be shown after delay, we must cancel this
             $timeout.cancel( popupTimeout );
-            
-            // And now we remove it from the DOM. However, if we have animation, we 
+
+            // And now we remove it from the DOM. However, if we have animation, we
             // need to wait for it to expire beforehand.
             // FIXME: this is a placeholder for a port of the transitions library.
             if ( angular.isDefined( scope.tt_animation ) && scope.tt_animation() ) {
@@ -312,6 +313,9 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
               tooltip.remove();
             }
           });
+          attrs.$observe( prefix+'Template', function ( val ) {
+              scope.tt_template = val;
+          });
         }
       };
     };
@@ -342,4 +346,28 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
 
 .directive( 'tooltipHtmlUnsafe', [ '$tooltip', function ( $tooltip ) {
   return $tooltip( 'tooltipHtmlUnsafe', 'tooltip', 'mouseenter' );
-}]);
+}])
+
+/**
+ * Loads the provided template via $http, attaches it to the current element,
+ * and compiles it relative to a new sibling scope.
+ *
+ * For internal use only!
+ */
+.directive( 'ttLoadTemplateInSibling', [ '$http', '$templateCache', '$compile', function ( $http, $templateCache, $compile ) {
+  return {
+    link: function ( scope, element, attrs ) {
+      var templateScope = scope.$parent.$new();
+
+      attrs.$observe( 'ttLoadTemplateInSibling', function ( val ) {
+        $http.get( val, { cache: $templateCache } )
+        .then( function( response ) {
+          element.html( response.data );
+          $compile( element.contents() )( templateScope );
+        });
+      });
+    }
+  };
+}])
+
+;

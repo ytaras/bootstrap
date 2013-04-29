@@ -22,6 +22,15 @@
         popover="I appeared on focus! Click away and I'll vanish..." 
         popover-trigger="focus" />
     </div>
+    <script type="text/ng-template" id="mypopover.tpl.html">
+      <div class="popover-content">
+        <h3>Hello!</h3>
+      </div>
+    </script>
+    <div>
+      <h4>Custom Templates</h4>
+      <button popover-template="mypopover.tpl.html" class="btn">Open!</button>
+    </div>
     <div>
       <h4>Other</h4>
       <button Popover-animation="true" popover="I fade in and out!" class="btn">fading</button>
